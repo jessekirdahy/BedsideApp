@@ -170,20 +170,26 @@ function formatTimestamp(timestamp) {
 }
 
 function updateContactTiles(contacts) {
-    const grid = document.querySelector('.contacts-grid');
+    const grid = document.querySelector('.grid');
     grid.innerHTML = '';
     
     contacts.forEach(contact => {
         const tile = document.createElement('a');
-        tile.className = 'contact-tile' + (contact.type === 'facetime' ? ' facetime' : '');
-        tile.href = `${contact.type}:${contact.phone}`;
         
+        // Determine the style class
+        let styleClass = 'contact-tile-default';
+        if (contact.type === 'facetime') {
+            styleClass = 'contact-tile-facetime';
+        }
         if (contact.name === 'Emergency') {
-            tile.style.background = 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)';
+            styleClass = 'contact-tile-emergency';
         }
         
+        tile.className = `${styleClass} rounded-xl text-white text-xl font-semibold cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg active:translate-y-0 shadow-md flex flex-col items-center justify-center min-h-[100px] no-underline`;
+        tile.href = `${contact.type}:${contact.phone}`;
+        
         tile.innerHTML = `
-            <div class="contact-icon">${contact.icon}</div>
+            <div class="text-3xl mb-2">${contact.icon}</div>
             <div>${contact.name}</div>
         `;
         
@@ -195,15 +201,20 @@ function displayCareLog(entries) {
     const container = document.getElementById('careLogContainer');
     container.innerHTML = '';
     
+    if (!entries || entries.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-gray-500 italic">No care log entries found</div>';
+        return;
+    }
+    
     entries.forEach(entry => {
         const entryDiv = document.createElement('div');
-        entryDiv.className = 'care-entry';
+        entryDiv.className = 'bg-white mb-4 p-4 rounded-lg border-l-4 border-blue-500 shadow-sm';
         entryDiv.innerHTML = `
-            <div class="care-entry-header">
-                <span class="care-entry-author">${entry.author}</span>
-                <span class="care-entry-date">${entry.date}</span>
+            <div class="flex justify-between mb-2 text-sm text-gray-600">
+                <span class="font-semibold text-gray-800">${entry.author}</span>
+                <span class="italic">${entry.date}</span>
             </div>
-            <div class="care-entry-content">${entry.content}</div>
+            <div class="text-base leading-relaxed text-gray-800">${entry.content}</div>
         `;
         container.appendChild(entryDiv);
     });
