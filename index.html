@@ -29,10 +29,28 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             padding: 20px;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             color: white;
             font-size: 24px;
             font-weight: 600;
+        }
+
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .main-container {
@@ -194,6 +212,128 @@
             display: none;
         }
 
+        .settings-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .settings-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .close-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .setting-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .setting-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .setting-group small {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .save-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .settings-help {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .settings-help h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .settings-help ol {
+            margin-left: 20px;
+        }
+
+        .settings-help li {
+            margin-bottom: 5px;
+            color: #555;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 flex-direction: column;
@@ -218,6 +358,7 @@
     <div id="mainApp">
         <header class="header">
             <div>Bedside App</div>
+            <button id="settingsBtn" class="settings-btn">⚙️</button>
         </header>
 
         <div class="main-container">
@@ -269,6 +410,45 @@
                 <div class="care-log-title">Care Log</div>
                 <div id="careLogContainer" class="care-log-container">
                     <div class="loading">Loading care log...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsPage" class="settings-page hidden">
+        <div class="settings-container">
+            <div class="settings-header">
+                <h2>App Settings</h2>
+                <button id="closeSettingsBtn" class="close-btn">✕</button>
+            </div>
+            
+            <div class="settings-content">
+                <div class="setting-group">
+                    <label for="careLogUrl">Care Log CSV URL:</label>
+                    <input type="url" id="careLogUrl" placeholder="https://docs.google.com/spreadsheets/d/e/...pub?output=csv">
+                    <small>Paste the published CSV URL from your Google Sheet</small>
+                </div>
+
+                <div class="setting-group">
+                    <label for="contactsUrl">Contacts CSV URL (optional):</label>
+                    <input type="url" id="contactsUrl" placeholder="https://docs.google.com/spreadsheets/d/e/...pub?output=csv">
+                    <small>Leave blank to use default contacts</small>
+                </div>
+
+                <div class="settings-actions">
+                    <button id="saveSettingsBtn" class="save-btn">Save Settings</button>
+                    <button id="clearSettingsBtn" class="clear-btn">Clear All</button>
+                </div>
+
+                <div class="settings-help">
+                    <h3>How to get CSV URLs:</h3>
+                    <ol>
+                        <li>Open your Google Sheet</li>
+                        <li>Go to <strong>File → Share → Publish to web</strong></li>
+                        <li>Choose <strong>Comma-separated values (.csv)</strong></li>
+                        <li>Click <strong>Publish</strong></li>
+                        <li>Copy the URL and paste above</li>
+                    </ol>
                 </div>
             </div>
         </div>

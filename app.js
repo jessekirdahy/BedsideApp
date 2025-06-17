@@ -1,13 +1,21 @@
 let gapi;
 let auth2;
 
-// Configuration - replace with your actual Google Sheets/Forms
-const CONFIG = {
-    CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
-    CARE_LOG_SHEET_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsRgbq8lUi6qWSldir_27avmx_h-VQ2iNRvPn-ZdTaGdoA2c4hrFlJLjtLLdsHsi1G52pus95s19kY/pub?output=csv',
-    CONTACTS_SHEET_URL: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv&gid=1',
-    ADD_ENTRY_FORM_URL: 'https://docs.google.com/forms/d/YOUR_FORM_ID/viewform'
-};
+// Configuration - now managed through settings
+function getConfig() {
+    const saved = localStorage.getItem('bedside_config');
+    if (saved) {
+        return JSON.parse(saved);
+    }
+    
+    // Default/fallback config
+    return {
+        CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
+        CARE_LOG_SHEET_URL: null,
+        CONTACTS_SHEET_URL: null,
+        ADD_ENTRY_FORM_URL: null
+    };
+}
 
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/people/v1/rest';
 const SCOPES = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/contacts.readonly';
@@ -23,6 +31,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function initializeApp() {
     console.log('Initializing app...');
+    
+    // Always setup settings button handlers
+    setupSettingsButton();
+    
+    // Check if settings are configured
+    const config = getConfig();
+    if (!config.CARE_LOG_SHEET_URL) {
+        console.log('No care log URL configured, showing settings first');
+        showSettingsPage();
+        return;
+    }
     
     // For demo, skip login and go straight to main app
     showMainApp();
@@ -98,9 +117,16 @@ function loadContactsFromSheet() {
 
 async function loadCareLogFromSheet() {
     console.log('Starting care log load...');
+    const config = getConfig();
+    
+    if (!config.CARE_LOG_SHEET_URL) {
+        document.getElementById('careLogContainer').innerHTML = '<div class="loading">No care log configured. Use settings to add one.</div>';
+        return;
+    }
+    
     try {
-        console.log('Fetching CSV from:', CONFIG.CARE_LOG_SHEET_URL);
-        const careLogData = await fetchCSVData(CONFIG.CARE_LOG_SHEET_URL);
+        console.log('Fetching CSV from:', config.CARE_LOG_SHEET_URL);
+        const careLogData = await fetchCSVData(config.CARE_LOG_SHEET_URL);
         console.log('Raw care log data:', careLogData);
         
         // Transform data to match our format (Timestamp, Event, Name columns)
@@ -331,6 +357,102 @@ setInterval(refreshTokenIfNeeded, 60000); // Check every minute
 
 // Initialize auto-refresh
 setupAutoRefresh();
+
+// Settings page functionality
+function showSettingsPage() {
+    const settingsPage = document.getElementById('settingsPage');
+    settingsPage.classList.remove('hidden');
+    settingsPage.style.display = 'flex'; // Force show with inline style
+    
+    document.getElementById('mainApp').classList.add('hidden');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    
+    // Load current settings into form
+    const config = getConfig();
+    document.getElementById('careLogUrl').value = config.CARE_LOG_SHEET_URL || '';
+    document.getElementById('contactsUrl').value = config.CONTACTS_SHEET_URL || '';
+}
+
+function hideSettingsPage() {
+    console.log('hideSettingsPage called');
+    const settingsPage = document.getElementById('settingsPage');
+    const mainApp = document.getElementById('mainApp');
+    
+    console.log('Settings page element:', settingsPage);
+    console.log('Main app element:', mainApp);
+    
+    if (settingsPage) {
+        settingsPage.classList.add('hidden');
+        settingsPage.style.display = 'none'; // Force hide with inline style
+        console.log('Added hidden class to settings page');
+        console.log('Settings page classes after hiding:', settingsPage.className);
+        console.log('Settings page style.display:', settingsPage.style.display);
+    }
+    
+    if (mainApp) {
+        mainApp.classList.remove('hidden');
+        console.log('Removed hidden class from main app');
+        
+        // Load contacts even without care log URL configured
+        loadContactsFromSheet();
+    }
+}
+
+function setupSettingsButton() {
+    console.log('Setting up settings button handlers');
+    
+    // Main settings button (might not exist on first load)
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', showSettingsPage);
+        console.log('Settings button handler added');
+    }
+    
+    // Close button
+    const closeBtn = document.getElementById('closeSettingsBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            console.log('Close button clicked');
+            hideSettingsPage();
+        });
+        console.log('Close button handler added');
+    } else {
+        console.error('Close button not found!');
+    }
+    
+    document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+        console.log('Save settings button clicked');
+        const careLogUrl = document.getElementById('careLogUrl').value.trim();
+        const contactsUrl = document.getElementById('contactsUrl').value.trim();
+        
+        console.log('Care log URL:', careLogUrl);
+        console.log('Contacts URL:', contactsUrl);
+        
+        if (!careLogUrl) {
+            alert('Care Log CSV URL is required');
+            return;
+        }
+        
+        const config = getConfig();
+        config.CARE_LOG_SHEET_URL = careLogUrl;
+        config.CONTACTS_SHEET_URL = contactsUrl || null;
+        
+        console.log('Saving config:', config);
+        localStorage.setItem('bedside_config', JSON.stringify(config));
+        
+        alert('Settings saved! Reloading app...');
+        location.reload();
+    });
+    
+    document.getElementById('clearSettingsBtn').addEventListener('click', function() {
+        if (confirm('Clear all settings? This cannot be undone.')) {
+            localStorage.removeItem('bedside_config');
+            document.getElementById('careLogUrl').value = '';
+            document.getElementById('contactsUrl').value = '';
+            alert('Settings cleared');
+        }
+    });
+}
 
 // Handle app visibility changes (when user returns to app)
 document.addEventListener('visibilitychange', function() {
