@@ -13,7 +13,9 @@ function getConfig() {
         CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
         CARE_LOG_SHEET_URL: null,
         CONTACTS_SHEET_URL: null,
-        ADD_ENTRY_FORM_URL: null
+        ADD_ENTRY_FORM_URL: null,
+        PHOTOS_URL: null,
+        IDLE_TIMEOUT: 5 // minutes
     };
 }
 
@@ -46,6 +48,8 @@ async function initializeApp() {
     // For demo, skip login and go straight to main app
     showMainApp();
     loadUserContacts();
+    setupIdleDetection();
+    setupScreensaver();
 }
 
 function setupGoogleSignIn() {
@@ -371,6 +375,8 @@ function showSettingsPage() {
     const config = getConfig();
     document.getElementById('careLogUrl').value = config.CARE_LOG_SHEET_URL || '';
     document.getElementById('contactsUrl').value = config.CONTACTS_SHEET_URL || '';
+    document.getElementById('photosUrl').value = config.PHOTOS_URL || '';
+    document.getElementById('idleTimeout').value = config.IDLE_TIMEOUT || '5';
 }
 
 function hideSettingsPage() {
@@ -400,6 +406,16 @@ function hideSettingsPage() {
 
 function setupSettingsButton() {
     console.log('Setting up settings button handlers');
+    
+    // Test screensaver button
+    const testBtn = document.getElementById('testScreensaverBtn');
+    if (testBtn) {
+        testBtn.addEventListener('click', function() {
+            console.log('Manual screensaver trigger');
+            enterScreensaver();
+        });
+        console.log('Test screensaver button handler added');
+    }
     
     // Main settings button (might not exist on first load)
     const settingsBtn = document.getElementById('settingsBtn');
@@ -433,9 +449,14 @@ function setupSettingsButton() {
             return;
         }
         
+        const photosUrl = document.getElementById('photosUrl').value.trim();
+        const idleTimeout = document.getElementById('idleTimeout').value;
+        
         const config = getConfig();
         config.CARE_LOG_SHEET_URL = careLogUrl;
         config.CONTACTS_SHEET_URL = contactsUrl || null;
+        config.PHOTOS_URL = photosUrl || null;
+        config.IDLE_TIMEOUT = parseInt(idleTimeout);
         
         console.log('Saving config:', config);
         localStorage.setItem('bedside_config', JSON.stringify(config));
@@ -449,6 +470,8 @@ function setupSettingsButton() {
             localStorage.removeItem('bedside_config');
             document.getElementById('careLogUrl').value = '';
             document.getElementById('contactsUrl').value = '';
+            document.getElementById('photosUrl').value = '';
+            document.getElementById('idleTimeout').value = '5';
             alert('Settings cleared');
         }
     });
@@ -477,14 +500,190 @@ window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
 });
 
-// Handle contact tile taps with haptic feedback (iOS)
-document.querySelectorAll('.contact-tile').forEach(tile => {
-    tile.addEventListener('touchstart', function() {
-        // Add haptic feedback if available
-        if (navigator.vibrate) {
-            navigator.vibrate(50);
+// Idle detection and screensaver functionality
+let idleTimer = null;
+let lastActivity = Date.now();
+let screensaverActive = false;
+let photoRotationTimer = null;
+let currentPhotoIndex = 0;
+let photoUrls = [];
+let idleDetectionPaused = false;
+
+function setupIdleDetection() {
+    const config = getConfig();
+    const timeout = config.IDLE_TIMEOUT || 5; // Default to 5 minutes if undefined
+    
+    if (timeout === 0) return; // Disabled
+    
+    console.log('Setting up idle detection with timeout:', timeout, 'minutes');
+    
+    // Clear any existing timer first
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+    }
+    
+    const timeoutMs = timeout * 60 * 1000;
+    
+    // Reset idle timer on any activity
+    const resetIdleTimer = () => {
+        lastActivity = Date.now();
+        
+        // Don't do anything if idle detection is paused or screensaver is active
+        if (idleDetectionPaused || screensaverActive) {
+            return;
         }
-    });
+        
+        if (idleTimer) {
+            clearTimeout(idleTimer);
+        }
+        
+        idleTimer = setTimeout(() => {
+            if (!screensaverActive && !idleDetectionPaused) { // Double-check before entering
+                console.log('Idle timeout triggered, entering screensaver');
+                enterScreensaver();
+            } else {
+                console.log('Idle timeout triggered but screensaver blocked:', {screensaverActive, idleDetectionPaused});
+            }
+        }, timeoutMs);
+        
+        console.log('Idle timer set for', timeoutMs, 'ms from now');
+    };
+    
+    // Activity events - only add if not already added
+    if (!window.idleDetectionSetup) {
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        events.forEach(event => {
+            document.addEventListener(event, resetIdleTimer, true);
+        });
+        window.idleDetectionSetup = true;
+    }
+    
+    // Start the timer with current timestamp
+    lastActivity = Date.now();
+    resetIdleTimer();
+}
+
+function setupScreensaver() {
+    const screensaverPage = document.getElementById('screensaverPage');
+    screensaverPage.addEventListener('click', exitScreensaver);
+}
+
+function enterScreensaver() {
+    console.log('Entering screensaver mode');
+    screensaverActive = true;
+    
+    // Reset UI state
+    hideSettingsPage();
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('mainApp').classList.add('hidden');
+    
+    // Show screensaver
+    const screensaverPage = document.getElementById('screensaverPage');
+    screensaverPage.classList.remove('hidden');
+    screensaverPage.style.display = 'flex';
+    
+    // Load and start photo rotation
+    loadPhotosForScreensaver();
+}
+
+function exitScreensaver() {
+    console.log('Exiting screensaver mode');
+    screensaverActive = false;
+    
+    // Hide screensaver
+    const screensaverPage = document.getElementById('screensaverPage');
+    screensaverPage.classList.add('hidden');
+    screensaverPage.style.display = 'none';
+    
+    // Show main app
+    showMainApp();
+    loadUserContacts();
+}
+
+function loadPhotosForScreensaver() {
+    const config = getConfig();
+    
+    if (!config.PHOTOS_URL) {
+        // Show default/placeholder images with proper SVG encoding
+        photoUrls = [
+            'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+                <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100%" height="100%" fill="#667eea"/>
+                    <text x="50%" y="50%" font-family="Arial" font-size="48" fill="white" text-anchor="middle" dy=".3em">Welcome</text>
+                </svg>
+            `)
+        ];
+        startPhotoRotation();
+        return;
+    }
+    
+    // For Google Photos, we'd need to parse the shared album
+    // For now, use placeholder until we implement photo parsing
+    photoUrls = [
+        'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#667eea"/>
+                <text x="50%" y="50%" font-family="Arial" font-size="48" fill="white" text-anchor="middle" dy=".3em">Family Photos</text>
+            </svg>
+        `)
+    ];
+    
+    startPhotoRotation();
+}
+
+function startPhotoRotation() {
+    if (photoUrls.length === 0) return;
+    
+    currentPhotoIndex = 0;
+    showCurrentPhoto();
+    
+    // Rotate photos every 10 seconds
+    photoRotationTimer = setInterval(() => {
+        currentPhotoIndex = (currentPhotoIndex + 1) % photoUrls.length;
+        showCurrentPhoto();
+    }, 10000);
+}
+
+function showCurrentPhoto() {
+    const img = document.getElementById('screensaverImage');
+    const caption = document.querySelector('.photo-caption');
+    
+    img.style.opacity = '0';
+    
+    // Add error handler for broken images
+    img.onerror = function() {
+        console.log('Image failed to load, hiding img element');
+        img.style.display = 'none';
+        caption.textContent = 'Touch anywhere to continue';
+    };
+    
+    img.onload = function() {
+        console.log('Image loaded successfully');
+        img.style.display = 'block';
+        img.style.opacity = '1';
+    };
+    
+    setTimeout(() => {
+        console.log('Setting image src to:', photoUrls[currentPhotoIndex]);
+        img.src = photoUrls[currentPhotoIndex];
+        caption.textContent = `Photo ${currentPhotoIndex + 1} of ${photoUrls.length}`;
+    }, 500);
+}
+
+// Handle contact tile taps with haptic feedback (iOS)
+document.addEventListener('DOMContentLoaded', function() {
+    // Delay to ensure tiles are created
+    setTimeout(() => {
+        document.querySelectorAll('.contact-tile').forEach(tile => {
+            tile.addEventListener('touchstart', function() {
+                // Add haptic feedback if available
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            });
+        });
+    }, 1000);
 });
 
 // Error handling for offline scenarios
