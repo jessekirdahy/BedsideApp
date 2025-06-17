@@ -185,12 +185,21 @@ function updateContactTiles(contacts) {
             styleClass = 'contact-tile-emergency';
         }
         
-        tile.className = `${styleClass} rounded-xl text-white text-xl font-semibold cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg active:translate-y-0 shadow-md flex flex-col items-center justify-center min-h-[100px] no-underline`;
+        // Determine border color to match tile type
+        let borderClass = 'border-blue-800';
+        if (contact.type === 'facetime') {
+            borderClass = 'border-purple-800';
+        }
+        if (contact.name === 'Emergency') {
+            borderClass = 'border-red-800';
+        }
+        
+        tile.className = `${styleClass} rounded-2xl text-white text-3xl font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg border-4 ${borderClass} flex flex-col items-center justify-center min-h-[120px] no-underline`;
         tile.href = `${contact.type}:${contact.phone}`;
         
         tile.innerHTML = `
-            <div class="text-3xl mb-2">${contact.icon}</div>
-            <div>${contact.name}</div>
+            <div class="text-6xl mb-3">${contact.icon}</div>
+            <div class="text-center leading-tight">${contact.name}</div>
         `;
         
         grid.appendChild(tile);
@@ -202,19 +211,19 @@ function displayCareLog(entries) {
     container.innerHTML = '';
     
     if (!entries || entries.length === 0) {
-        container.innerHTML = '<div class="text-center py-10 text-gray-500 italic">No care log entries found</div>';
+        container.innerHTML = '<div class="text-center py-10 text-gray-700 text-2xl font-bold">No care log entries found</div>';
         return;
     }
     
     entries.forEach(entry => {
         const entryDiv = document.createElement('div');
-        entryDiv.className = 'bg-white mb-4 p-4 rounded-lg border-l-4 border-blue-500 shadow-sm';
+        entryDiv.className = 'bg-white mb-6 p-6 rounded-lg border-l-8 border-blue-800 shadow-lg';
         entryDiv.innerHTML = `
-            <div class="flex justify-between mb-2 text-sm text-gray-600">
-                <span class="font-semibold text-gray-800">${entry.author}</span>
-                <span class="italic">${entry.date}</span>
+            <div class="flex justify-between mb-4 text-xl text-gray-800">
+                <span class="font-bold text-gray-900">${entry.author}</span>
+                <span class="font-semibold text-gray-700">${entry.date}</span>
             </div>
-            <div class="text-base leading-relaxed text-gray-800">${entry.content}</div>
+            <div class="text-2xl leading-relaxed text-gray-900 font-medium">${entry.content}</div>
         `;
         container.appendChild(entryDiv);
     });
