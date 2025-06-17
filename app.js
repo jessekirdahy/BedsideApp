@@ -88,16 +88,13 @@ function showMainApp() {
 }
 
 async function loadUserContacts() {
-    console.log('Loading user contacts and care log...');
+    console.log('Loading user contacts...');
     try {
-        // Load static contacts first
+        // Load static contacts
         loadContactsFromSheet();
-        
-        // Load care log from Google Sheets
-        await loadCareLogFromSheet();
-        console.log('Data loaded successfully');
+        console.log('Contacts loaded successfully');
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading contacts:', error);
     }
 }
 
@@ -206,8 +203,8 @@ function updateContactTiles(contacts) {
     });
 }
 
-function displayCareLog(entries) {
-    const container = document.getElementById('careLogContainer');
+function displayCareLog(entries, containerId = 'careLogContainer') {
+    const container = document.getElementById(containerId);
     container.innerHTML = '';
     
     if (!entries || entries.length === 0) {
@@ -449,6 +446,16 @@ function setupSettingsButton() {
         console.log('Hamburger menu handlers added');
     }
     
+    // Care log button
+    const careLogBtn = document.getElementById('careLogBtn');
+    if (careLogBtn) {
+        careLogBtn.addEventListener('click', function() {
+            menuDropdown.classList.add('hidden'); // Close menu
+            showCareLogModal();
+        });
+        console.log('Care log button handler added');
+    }
+    
     // Test screensaver button
     const testBtn = document.getElementById('testScreensaverBtn');
     if (testBtn) {
@@ -468,6 +475,15 @@ function setupSettingsButton() {
             showSettingsPage();
         });
         console.log('Settings button handler added');
+    }
+    
+    // Care log modal close button
+    const closeCareLogBtn = document.getElementById('closeCareLogBtn');
+    if (closeCareLogBtn) {
+        closeCareLogBtn.addEventListener('click', function() {
+            hideCareLogModal();
+        });
+        console.log('Close care log button handler added');
     }
     
     // Close button
@@ -521,6 +537,55 @@ function setupSettingsButton() {
             alert('Settings cleared');
         }
     });
+}
+
+// Care log modal functions
+function showCareLogModal() {
+    console.log('Showing care log modal');
+    const careLogModal = document.getElementById('careLogModal');
+    careLogModal.classList.remove('hidden');
+    careLogModal.style.display = 'flex'; // Force show with inline style
+    
+    // Load care log data into modal
+    loadCareLogIntoModal();
+}
+
+function hideCareLogModal() {
+    console.log('Hiding care log modal');
+    const careLogModal = document.getElementById('careLogModal');
+    careLogModal.classList.add('hidden');
+    careLogModal.style.display = 'none'; // Force hide with inline style
+}
+
+async function loadCareLogIntoModal() {
+    console.log('Loading care log into modal...');
+    const config = getConfig();
+    
+    if (!config.CARE_LOG_SHEET_URL) {
+        document.getElementById('careLogModalContainer').innerHTML = '<div class="text-center py-12 text-2xl text-gray-700 font-semibold">No care log configured. Use settings to add one.</div>';
+        return;
+    }
+    
+    try {
+        const careLogData = await fetchCSVData(config.CARE_LOG_SHEET_URL);
+        console.log('Raw care log data for modal:', careLogData);
+        
+        // Transform data to match our format (Timestamp, Event, Name columns)
+        const careLogEntries = careLogData.map(row => ({
+            date: formatTimestamp(row.Timestamp),
+            author: row.Name || 'Unknown',
+            content: row.Event || ''
+        }));
+        
+        // Sort by date (newest first)
+        careLogEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        displayCareLog(careLogEntries, 'careLogModalContainer');
+        console.log('Care log displayed in modal successfully');
+    } catch (error) {
+        console.error('Error loading care log into modal:', error);
+        document.getElementById('careLogModalContainer').innerHTML = '<div class="text-center py-12 text-2xl text-red-600 font-semibold">Error loading care log</div>';
+    }
 }
 
 // Handle app visibility changes (when user returns to app)
