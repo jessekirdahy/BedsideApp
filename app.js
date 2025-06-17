@@ -188,8 +188,19 @@ async function fetchCSVData(url) {
         console.log('Fetching from proxy URL:', proxyUrl);
         const response = await fetch(proxyUrl);
         const data = await response.json();
-        const csvText = data.contents;
-        console.log('Raw CSV text received:', csvText);
+        
+        let csvText = data.contents;
+        console.log('Original contents:', csvText);
+        
+        // Check if it's a data URL with base64
+        if (csvText.startsWith('data:text/csv;base64,')) {
+            const base64Data = csvText.replace('data:text/csv;base64,', '');
+            csvText = atob(base64Data);
+            console.log('Decoded data URL base64. Content:', csvText);
+        } else {
+            console.log('Using content as-is');
+        }
+        
         const parsed = parseCSV(csvText);
         console.log('Parsed CSV data:', parsed);
         return parsed;
@@ -221,21 +232,35 @@ function getDemoData() {
 }
 
 function parseCSV(csvText) {
+    console.log('Parsing CSV. First 200 chars:', csvText.substring(0, 200));
+    
     const lines = csvText.split('\n');
-    const headers = lines[0].split(',');
+    console.log('Split into', lines.length, 'lines');
+    console.log('First line (headers):', lines[0]);
+    console.log('Second line (first data):', lines[1]);
+    
+    const headers = lines[0].split(',').map(h => h.trim());
+    console.log('Parsed headers:', headers);
+    
     const data = [];
     
     for (let i = 1; i < lines.length; i++) {
-        if (lines[i].trim()) {
-            const values = lines[i].split(',');
+        const line = lines[i].trim();
+        if (line) {
+            console.log(`Processing line ${i}:`, line);
+            const values = line.split(',').map(v => v.trim());
+            console.log('Split values:', values);
+            
             const entry = {};
             headers.forEach((header, index) => {
-                entry[header.trim()] = values[index]?.trim() || '';
+                entry[header] = values[index] || '';
             });
+            console.log('Created entry:', entry);
             data.push(entry);
         }
     }
     
+    console.log('Final parsed data:', data);
     return data;
 }
 
