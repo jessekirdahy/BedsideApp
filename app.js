@@ -427,11 +427,34 @@ function hideSettingsPage() {
 function setupSettingsButton() {
     console.log('Setting up settings button handlers');
     
+    // Hamburger menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const menuDropdown = document.getElementById('menuDropdown');
+    if (menuBtn && menuDropdown) {
+        menuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            menuDropdown.classList.toggle('hidden');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function() {
+            menuDropdown.classList.add('hidden');
+        });
+        
+        // Prevent menu from closing when clicking inside dropdown
+        menuDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        console.log('Hamburger menu handlers added');
+    }
+    
     // Test screensaver button
     const testBtn = document.getElementById('testScreensaverBtn');
     if (testBtn) {
         testBtn.addEventListener('click', function() {
             console.log('Manual screensaver trigger');
+            menuDropdown.classList.add('hidden'); // Close menu
             enterScreensaver();
         });
         console.log('Test screensaver button handler added');
@@ -440,7 +463,10 @@ function setupSettingsButton() {
     // Main settings button (might not exist on first load)
     const settingsBtn = document.getElementById('settingsBtn');
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', showSettingsPage);
+        settingsBtn.addEventListener('click', function() {
+            menuDropdown.classList.add('hidden'); // Close menu
+            showSettingsPage();
+        });
         console.log('Settings button handler added');
     }
     

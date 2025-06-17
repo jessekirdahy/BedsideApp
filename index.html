@@ -43,16 +43,31 @@
         </div>
     </div>
 
-    <div id="mainApp">
-        <header class="bg-gray-900 p-8 flex justify-between items-center text-white border-b-4 border-gray-700">
-            <div class="text-4xl font-bold">Bedside App</div>
-            <div class="flex gap-4">
-                <button id="testScreensaverBtn" class="bg-gray-700 hover:bg-gray-600 rounded-2xl w-16 h-16 text-2xl cursor-pointer text-white transition-all border-2 border-gray-500">🖼️</button>
-                <button id="settingsBtn" class="bg-gray-700 hover:bg-gray-600 rounded-2xl w-16 h-16 text-2xl cursor-pointer text-white transition-all border-2 border-gray-500">⚙️</button>
+    <div id="mainApp" class="relative">
+        <!-- Hamburger menu button in top-right corner -->
+        <button id="menuBtn" class="fixed top-4 right-4 z-40 bg-gray-700 hover:bg-gray-600 rounded-xl w-12 h-12 text-white transition-all border-2 border-gray-500 flex items-center justify-center shadow-lg">
+            <div class="flex flex-col gap-1">
+                <div class="w-5 h-0.5 bg-white"></div>
+                <div class="w-5 h-0.5 bg-white"></div>
+                <div class="w-5 h-0.5 bg-white"></div>
             </div>
-        </header>
+        </button>
 
-        <div class="flex-1 flex p-8 gap-8 md:flex-row flex-col bg-gray-100">
+        <!-- Dropdown menu -->
+        <div id="menuDropdown" class="fixed top-16 right-4 z-30 bg-white rounded-xl shadow-xl border-2 border-gray-300 hidden">
+            <div class="p-2">
+                <button id="testScreensaverBtn" class="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-lg">
+                    <span class="text-xl">🖼️</span>
+                    <span>Test Screensaver</span>
+                </button>
+                <button id="settingsBtn" class="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-lg">
+                    <span class="text-xl">⚙️</span>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex h-screen p-8 gap-8 md:flex-row flex-col bg-gray-100">
             <div class="flex-[2] bg-white rounded-3xl p-8 shadow-xl border-4 border-gray-300">
                 <div class="grid grid-cols-2 grid-rows-4 gap-6 h-full">
                     <a href="tel:+15551234567" class="contact-tile-default rounded-2xl text-white text-3xl font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg border-4 border-blue-800 flex flex-col items-center justify-center min-h-[120px] no-underline">
