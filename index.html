@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bedside App">
+    <title>Bedside App</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .contacts-section {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 20px;
+            height: 100%;
+        }
+
+        .contact-tile {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 22px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            min-height: 100px;
+        }
+
+        .contact-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .contact-tile:active {
+            transform: translateY(0);
+        }
+
+        .contact-tile.facetime {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .contact-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .care-log-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .care-log-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .care-log-container {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            border-radius: 10px;
+            background: #f8f9fa;
+            padding: 15px;
+        }
+
+        .care-entry {
+            background: white;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .care-entry-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .care-entry-author {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .care-entry-date {
+            font-style: italic;
+        }
+
+        .care-entry-content {
+            font-size: 16px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .contacts-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-card">
+            <h2>Welcome</h2>
+            <p>Please sign in to access your bedside app</p>
+            <button id="signInButton" class="login-button">Sign in with Google</button>
+        </div>
+    </div>
+
+    <div id="mainApp">
+        <header class="header">
+            <div>Bedside App</div>
+        </header>
+
+        <div class="main-container">
+            <div class="contacts-section">
+                <div class="contacts-grid">
+                    <a href="tel:+15551234567" class="contact-tile">
+                        <div class="contact-icon">📞</div>
+                        <div>Doctor Smith</div>
+                    </a>
+                    
+                    <a href="tel:+15551234568" class="contact-tile">
+                        <div class="contact-icon">👨‍⚕️</div>
+                        <div>Nurse Mary</div>
+                    </a>
+                    
+                    <a href="tel:+15551234569" class="contact-tile">
+                        <div class="contact-icon">👨</div>
+                        <div>Son John</div>
+                    </a>
+                    
+                    <a href="facetime:john@example.com" class="contact-tile facetime">
+                        <div class="contact-icon">📹</div>
+                        <div>FaceTime John</div>
+                    </a>
+                    
+                    <a href="tel:+15551234570" class="contact-tile">
+                        <div class="contact-icon">👩</div>
+                        <div>Daughter Sue</div>
+                    </a>
+                    
+                    <a href="facetime:sue@example.com" class="contact-tile facetime">
+                        <div class="contact-icon">📹</div>
+                        <div>FaceTime Sue</div>
+                    </a>
+                    
+                    <a href="tel:+15551234571" class="contact-tile">
+                        <div class="contact-icon">🏥</div>
+                        <div>Front Desk</div>
+                    </a>
+                    
+                    <a href="tel:911" class="contact-tile" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);">
+                        <div class="contact-icon">🚨</div>
+                        <div>Emergency</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="care-log-section">
+                <div class="care-log-title">Care Log</div>
+                <div id="careLogContainer" class="care-log-container">
+                    <div class="loading">Loading care log...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('Inline script in main page loaded');
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>
